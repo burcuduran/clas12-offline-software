@@ -1,10 +1,4 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package org.jlab.service.eb;
-
 
 import java.util.List;
 import org.jlab.clas.reco.ReconstructionEngine;
@@ -17,6 +11,7 @@ import org.jlab.clas.detector.CherenkovResponse;
 /**
  *
  * @author gavalian
+ * @author jnewton
  */
 public class EBEngine extends ReconstructionEngine {
 
@@ -66,15 +61,12 @@ public class EBEngine extends ReconstructionEngine {
         eb.addCherenkovResponses(responseHTCC);
         eb.addCherenkovResponses(responseLTCC);
 
-        
         // Add tracks
         List<DetectorTrack>  tracks = DetectorData.readDetectorTracks(de, trackType);
         eb.addTracks(tracks);       
         List<DetectorTrack> ctracks = DetectorData.readCentralDetectorTracks(de, "CVTRec::Tracks");
         eb.addTracks(ctracks);
         
-        //System.out.println("Number of particles before matching  " + eb.getEvent().getParticles().size());
-
         eb.processHitMatching();
         eb.addTaggerTracks(trackFT);
         eb.processNeutralTracks();        
@@ -82,40 +74,35 @@ public class EBEngine extends ReconstructionEngine {
  
         EBRadioFrequency rf = new EBRadioFrequency();
         eb.getEvent().getEventHeader().setRfTime(rf.getTime(de)+EBConstants.RF_OFFSET);
-        //eb.getEvent().setRfTime(rf);
-        
-        //System.out.println(eb.getEvent().toString());
- 
+
         EBAnalyzer analyzer = new EBAnalyzer();
-        //System.out.println("analyzing");
         analyzer.processEvent(eb.getEvent());
         
+        if (eb.getEvent().getParticles().size()>0) {
 
-        
-        //System.out.println(eb.getEvent().toString());
-        
-
-        
-        if(eb.getEvent().getParticles().size()>0){
             DataBank bankP = DetectorData.getDetectorParticleBank(eb.getEvent().getParticles(), de, particleBank);
             de.appendBanks(bankP);
             DataBank bankEve = DetectorData.getEventBank(eb.getEvent(), de, eventBank);
             de.appendBanks(bankEve);
-            List<CalorimeterResponse>   calorimeters = eb.getEvent().getCalorimeterResponseList();
+
+            List<CalorimeterResponse> calorimeters = eb.getEvent().getCalorimeterResponseList();
             if(calorimeterBank!=null && calorimeters.size()>0) {
                 DataBank bankCal = DetectorData.getCalorimeterResponseBank(calorimeters, de, calorimeterBank);
                 de.appendBanks(bankCal);
             }
+
             List<ScintillatorResponse> scintillators = eb.getEvent().getScintillatorResponseList();
             if(scintillatorBank!=null && scintillators.size()>0) {
                 DataBank bankSci = DetectorData.getScintillatorResponseBank(scintillators, de, scintillatorBank);
                 de.appendBanks(bankSci);               
             }
-            List<CherenkovResponse>       cherenkovs = eb.getEvent().getCherenkovResponseList();
+
+            List<CherenkovResponse> cherenkovs = eb.getEvent().getCherenkovResponseList();
             if(cherenkovBank!=null && cherenkovs.size()>0) {
                 DataBank bankChe = DetectorData.getCherenkovResponseBank(cherenkovs, de, cherenkovBank);
                 de.appendBanks(bankChe);
             }
+
             if(matrixBank!=null) {
                 DataBank bankMat = DetectorData.getTBCovMatBank(eb.getEvent().getParticles(), de, matrixBank);
                 de.appendBanks(bankMat);
