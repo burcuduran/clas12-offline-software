@@ -41,23 +41,19 @@ public class EBEngine extends ReconstructionEngine {
 
         EventBuilder eb = new EventBuilder();
         eb.initEvent(head); // clear particles
-        
-        // Add detector responses
-        CalorimeterResponse cal = new CalorimeterResponse();
-        ScintillatorResponse sci = new ScintillatorResponse();
-        
-        List<CalorimeterResponse>   responseECAL = cal.readCalorimeterEvent(de, "ECAL::clusters", DetectorType.EC);
-        List<ScintillatorResponse>  responseFTOF = sci.readScintillatorEvent(de, "FTOF::hits", DetectorType.FTOF);
-        List<ScintillatorResponse>  responseCTOF = sci.readScintillatorEvent(de, "CTOF::hits", DetectorType.CTOF);
+
+        List<DetectorResponse>   responseECAL = CalorimeterResponse.readHipoEvent(de, "ECAL::clusters", DetectorType.EC);
+        List<DetectorResponse>  responseFTOF = ScintillatorResponse.readHipoEvent(de, "FTOF::hits", DetectorType.FTOF);
+        List<DetectorResponse>  responseCTOF = ScintillatorResponse.readHipoEvent(de, "CTOF::hits", DetectorType.CTOF);
         
         List<CherenkovResponse>     responseHTCC = CherenkovResponse.readHipoEvent(de,"HTCC::rec",DetectorType.HTCC);
         List<CherenkovResponse>     responseLTCC = CherenkovResponse.readHipoEvent(de,"LTCC::rec",DetectorType.LTCC);
         
         List<TaggerResponse>             trackFT = TaggerResponse.readHipoEvent(de, "FT::particles");
         
-        eb.addScintillatorResponses(responseFTOF);
-        eb.addScintillatorResponses(responseCTOF);
-        eb.addCalorimeterResponses(responseECAL);
+        eb.addDetectorResponses(responseFTOF);
+        eb.addDetectorResponses(responseCTOF);
+        eb.addDetectorResponses(responseECAL);
         eb.addCherenkovResponses(responseHTCC);
         eb.addCherenkovResponses(responseLTCC);
 
@@ -74,7 +70,7 @@ public class EBEngine extends ReconstructionEngine {
  
         EBRadioFrequency rf = new EBRadioFrequency();
         eb.getEvent().getEventHeader().setRfTime(rf.getTime(de)+EBConstants.RF_OFFSET);
-
+        
         EBAnalyzer analyzer = new EBAnalyzer();
         analyzer.processEvent(eb.getEvent());
         
@@ -154,5 +150,4 @@ public class EBEngine extends ReconstructionEngine {
     }
     
 }
-
 
