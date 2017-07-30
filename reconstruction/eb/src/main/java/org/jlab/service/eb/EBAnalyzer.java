@@ -36,12 +36,12 @@ public class EBAnalyzer {
             double path = 0.0;
 
             // FTOF Panel 1B:
-            if(trigger.hasHit(DetectorType.FTOF, 2)==true){
+            if(trigger.hasHit(DetectorType.FTOF, 2)){
                 time = trigger.getTime(DetectorType.FTOF, 2);
                 path = trigger.getPathLength(DetectorType.FTOF, 2);
             }
             // FTOF Panel 1A:
-            else if(trigger.hasHit(DetectorType.FTOF, 1)==true){
+            else if(trigger.hasHit(DetectorType.FTOF, 1)){
                 time = trigger.getTime(DetectorType.FTOF, 1);
                 path = trigger.getPathLength(DetectorType.FTOF, 1);
             }
@@ -89,23 +89,23 @@ public class EBAnalyzer {
             double mass = 0.0;
 
             // FTOF Panel 1B:
-            if(p.hasHit(DetectorType.FTOF, 2)==true){
+            if(p.hasHit(DetectorType.FTOF, 2)){
                 beta = p.getBeta(DetectorType.FTOF, 2,start_time);
-                mass = p.getMass2(DetectorType.FTOF, 2,start_time);
+                //mass = p.getMass2(DetectorType.FTOF, 2,start_time);
                 p.setBeta(beta);
             }
 
             // FTOF Panel 1A:
-            else if(p.hasHit(DetectorType.FTOF, 1)==true){
+            else if(p.hasHit(DetectorType.FTOF, 1)){
                 beta = p.getBeta(DetectorType.FTOF,1, start_time);
-                mass = p.getMass2(DetectorType.FTOF,1, start_time);
+                //mass = p.getMass2(DetectorType.FTOF,1, start_time);
                 p.setBeta(beta);
             }
 
             // CTOF:
-            else if(p.hasHit(DetectorType.CTOF, 0)==true){
+            else if(p.hasHit(DetectorType.CTOF, 0)){
                 beta = p.getBeta(DetectorType.CTOF ,start_time);
-                mass = p.getMass2(DetectorType.CTOF,start_time);
+                //mass = p.getMass2(DetectorType.CTOF,start_time);
                 p.setBeta(beta);
             }
         }
@@ -114,9 +114,17 @@ public class EBAnalyzer {
     public void assignPids(DetectorEvent event) {
 
         PIDHypothesis pidHyp = new PIDHypothesis();
+        pidHyp.setEvent(event);
 
         // start at second particle, because first particle is the
         // trigger particle with PID assigned elsewhere:
+        for (int i = 1; i < event.getParticles().size(); i++) {
+
+            final int pid=pidHyp.getSimplePid(event.getParticle(i));
+            pidHyp.finalizePID(event.getParticle(i),pid);
+        }
+
+        /*
         for (int i = 1; i < event.getParticles().size(); i++){
 
             DetectorParticle p = event.getParticle(i);
@@ -144,6 +152,7 @@ public class EBAnalyzer {
                 }
             }
         }
+        */
     }
 
 
@@ -153,84 +162,120 @@ public class EBAnalyzer {
         private double PIDquality = 0.0;
         private DetectorEvent event;
 
-        public PIDHypothesis() {}
+        public PIDHypothesis() {
+        }
 
-        public void setEvent(DetectorEvent e) {event = e;}
+        public void setEvent(DetectorEvent e) {
+            event = e;
+        }
 
         public void PIDMatch(DetectorParticle p, int pid) {
 
-            double vertex_index = optimalVertexTime(p);
-            boolean vertexCheck = (abs(pid)==211 && vertex_index==1 && p.getBeta()>0.0) ||
-                    (abs(pid)==2212 && vertex_index==0 && p.getBeta()>0.0) ||
-                    (abs(pid)==321 && vertex_index==2 && p.getBeta()>0.0);
+            //double vertex_index = optimalVertexTime(p);
+            //boolean vertexCheck = (abs(pid)==211 && vertex_index==1 && p.getBeta()>0.0) ||
+            //        (abs(pid)==2212 && vertex_index==0 && p.getBeta()>0.0) ||
+            //        (abs(pid)==321 && vertex_index==2 && p.getBeta()>0.0);
 
-            //boolean vertexCheck2 = ( abs(pid)==bestPidBasedOnTiming(p) && p.getBeta()>0.0 );
+            boolean vertexCheck = (abs(pid) == bestPidBasedOnTiming(p) && p.getBeta() > 0.0);
 
-            boolean sfCheck = p.getEnergyFraction(DetectorType.EC)>EBConstants.ECAL_SAMPLINGFRACTION_CUT;
-            boolean htccSignalCheck = p.getNphe(DetectorType.HTCC)>EBConstants.HTCC_NPHE_CUT;
-            boolean ltccSignalCheck = p.getNphe(DetectorType.LTCC)>EBConstants.LTCC_NPHE_CUT;
-            boolean htccPionThreshold = p.vector().mag()>EBConstants.HTCC_PION_THRESHOLD;
-            boolean ltccPionThreshold = p.vector().mag()<EBConstants.LTCC_UPPER_PION_THRESHOLD
-                    && p.vector().mag()>EBConstants.LTCC_LOWER_PION_THRESHOLD;
+            boolean sfCheck = p.getEnergyFraction(DetectorType.EC) > EBConstants.ECAL_SAMPLINGFRACTION_CUT;
+            boolean htccSignalCheck = p.getNphe(DetectorType.HTCC) > EBConstants.HTCC_NPHE_CUT;
+            boolean ltccSignalCheck = p.getNphe(DetectorType.LTCC) > EBConstants.LTCC_NPHE_CUT;
+            boolean htccPionThreshold = p.vector().mag() > EBConstants.HTCC_PION_THRESHOLD;
+            boolean ltccPionThreshold = p.vector().mag() < EBConstants.LTCC_UPPER_PION_THRESHOLD
+                    && p.vector().mag() > EBConstants.LTCC_LOWER_PION_THRESHOLD;
 
-            switch(abs(pid)) {
+            switch (abs(pid)) {
                 case 11:
-                    if(htccSignalCheck==true && sfCheck==true){
-                        this.finalizePID(p, pid);
-                        break;
-                    }
-                    if(htccSignalCheck==true && sfCheck==true){
+                    if (htccSignalCheck && sfCheck) {
                         this.finalizePID(p, pid);
                         break;
                     }
                 case 211:
-                    if(vertexCheck==true && htccSignalCheck==true && sfCheck==false
-                            && htccPionThreshold==true) {
+                    if (htccSignalCheck && !sfCheck && htccPionThreshold) {
                         this.finalizePID(p, pid);
                         break;
                     }
-                    if(vertexCheck==false && htccSignalCheck==true && sfCheck==false
-                            && htccPionThreshold==true) {
-                        this.finalizePID(p, pid);
-                        break;
-                    }
-                    if(vertexCheck==true && ltccSignalCheck==true && sfCheck==false
-                            && ltccPionThreshold==true) {
-                        this.finalizePID(p, pid);
-                        break;
-                    }
-                    if(vertexCheck==false && ltccSignalCheck==true && sfCheck==false
-                            && ltccPionThreshold==true) {
+                    if (ltccSignalCheck && !sfCheck && ltccPionThreshold) {
                         this.finalizePID(p, pid);
                         break;
                     }
                 case 321:
-                    if(vertexCheck==true && sfCheck==false && htccSignalCheck==false){
+                    if (vertexCheck && !sfCheck && !htccSignalCheck) {
                         this.finalizePID(p, pid);
                         break;
                     }
                 case 2212:
-                    if(vertexCheck==true && sfCheck==false && htccSignalCheck==false){
+                    if (vertexCheck && !sfCheck && !htccSignalCheck) {
                         this.finalizePID(p, pid);
                         break;
                     }
             }
         }
 
+        public int getSimplePid(DetectorParticle p) {
+
+            boolean sfCheck = p.getEnergyFraction(DetectorType.EC) > EBConstants.ECAL_SAMPLINGFRACTION_CUT;
+            boolean htccSignalCheck = p.getNphe(DetectorType.HTCC) > EBConstants.HTCC_NPHE_CUT;
+            boolean ltccSignalCheck = p.getNphe(DetectorType.LTCC) > EBConstants.LTCC_NPHE_CUT;
+            boolean htccPionThreshold = p.vector().mag() > EBConstants.HTCC_PION_THRESHOLD;
+            //boolean ltccPionThreshold = p.vector().mag() > EBConstants.LTCC_LOWER_PION_THRESHOLD;
+            boolean ltccKaonThreshold = p.vector().mag() > EBConstants.LTCC_UPPER_PION_THRESHOLD;
+
+            final int qq = p.getCharge();
+
+            int simplePid = 0;
+
+            // not ready for neutrals:
+            if (qq == 0) simplePid = 0;
+
+            // charged:
+            else {
+
+                // electron/positron requirements:
+                if (htccSignalCheck && sfCheck) simplePid = qq * -11;
+
+                // else it's a hadron:
+                else {
+                    final int timingPid = bestPidBasedOnTiming(p);
+
+                    switch (timingPid) {
+                        case 211:
+                            simplePid = qq * 211;
+                            break;
+                        case 321:
+                            if (ltccSignalCheck && !ltccKaonThreshold) simplePid = qq * 211;
+                            else if (htccSignalCheck && htccPionThreshold) simplePid = qq * 211;
+                            else simplePid = qq * 321;
+                            break;
+                        case 2212:
+                            if (ltccSignalCheck && ltccKaonThreshold) simplePid = qq * 321;
+                            else if (p.getCharge() > 0) simplePid = 2212;
+                            else simplePid = qq * 321;
+                            break;
+                        default:
+                            throw new RuntimeException("EBAnalyzer:bestPid:  Unknown pid:  " + timingPid);
+                    }
+                }
+            }
+            return simplePid;
+        }
+
+/*
         public int optimalVertexTime(DetectorParticle p) {
             int vertex_index = 0;
             HashMap<Integer,Double> vertexDiffs = new HashMap<Integer,Double>();
             double event_start_time = event.getEventHeader().getStartTime();
 
             // FTOF Panel 1B:
-            if(p.hasHit(DetectorType.FTOF,2)==true) {
+            if(p.hasHit(DetectorType.FTOF,2)) {
                 vertexDiffs.put(0,abs(p.getVertexTime(DetectorType.FTOF, 2, 2212)-event_start_time));
                 vertexDiffs.put(1,abs(p.getVertexTime(DetectorType.FTOF, 2, 211)-event_start_time));
                 vertexDiffs.put(2,abs(p.getVertexTime(DetectorType.FTOF, 2, 321)-event_start_time));
             }
 
             // FTOF Panel 1A:
-            else if(p.hasHit(DetectorType.FTOF,1)==true) {
+            else if(p.hasHit(DetectorType.FTOF,1)) {
                 vertexDiffs.put(0,abs(p.getVertexTime(DetectorType.FTOF, 1, 2212)-event_start_time));
                 vertexDiffs.put(1,abs(p.getVertexTime(DetectorType.FTOF, 1, 211)-event_start_time));
                 vertexDiffs.put(2,abs(p.getVertexTime(DetectorType.FTOF, 1, 321)-event_start_time));
@@ -247,6 +292,7 @@ public class EBAnalyzer {
             }
             return vertex_index;
         }
+*/
 
         public int bestPidBasedOnTiming(DetectorParticle p) {
 
@@ -254,8 +300,8 @@ public class EBAnalyzer {
 
             // Prefer FTOF Panel 1B (2) over 1A (1):
             int iPanel=0;
-            if     (p.hasHit(DetectorType.FTOF,2)==true) iPanel=2;
-            else if(p.hasHit(DetectorType.FTOF,1)==true) iPanel=1;
+            if     (p.hasHit(DetectorType.FTOF,2)) iPanel=2;
+            else if(p.hasHit(DetectorType.FTOF,1)) iPanel=1;
 
             if (iPanel>0) {
                 double minTimeDiff=Double.MAX_VALUE;
