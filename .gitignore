@@ -1,4 +1,18 @@
+coatjava
+myLocalMvnRepo
+
+# validation stuff:
+clara_installation
+files.list
+cook.clara
+*.hipo
+*.evio
+*.evio.tgz
+*.evio.tar.gz
+
+*.classpath
 *.class
+
 *lundfiles*.dat
 
 # Mobile Tools for Java (J2ME)
@@ -11,3 +25,17 @@
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+
+target
+.project
+.settings
+
+# editors:
+*.iml
+*.idea
+*.ipr
+*.iws
+*.swp
+*~
+
+
